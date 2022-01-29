@@ -1,0 +1,186 @@
+frameworkVersion: "^3.0.1"
+service: ${env:SERVICE, "none"}
+plugins:
+  - serverless-offline
+custom:
+  stage: v1
+  region: ${env:AWS_REGION, "none"}
+  serverless-offline:
+    httpPort: 3000
+    host: 0.0.0.0
+  variables:
+    log_level: DEBUG
+    image: ${cf:persistance.ECRKolvirUri, "0.dkr.ecr.u-2.amazonaws.com/local"}:${env:GITSHA, "none"}
+    base_domain_name: ${cf:domain-names.DomainName, "none"}
+    tags:
+      - Key: service
+        Value: ${self:service}
+provider:
+  name: aws
+  stage: ${self:custom.stage}
+  runtime: python3.9
+  versionFunctions: false
+  deploymentBucket: # !Sub and Fn::Sub both don't work here ;-/
+    name: ${cf:persistance.ServerlessBucketName, "none"}
+    serverSideEncryption: AES256
+  region: ${self:custom.region}
+  ecr:
+    images:
+      api:
+        uri: ${self:custom.variables.image}
+  vpc:
+    securityGroupIds:
+      - !Ref LambdaSecurityGroup
+    subnetIds:
+      Fn::Split:
+        - ","
+        - ${cf:vpc-2azs.SubnetsPublic, "1,2,3"}
+  environment:
+    GITSHA: ${env:GITSHA, "none"}
+    SERVICE_NAME: ${self:service}
+    LOG_LEVEL: ${self:custom.variables.log_level}
+    # switch to ssm at some point...
+    JWT_SECRET: ${env:JWT_SECRET, "none"}
+    PYPI_S3_BUCKET: ${cf:persistance.PypiBucketName, "none"}
+  apiGateway:
+    shouldStartNameWithService: true
+    metrics: true
+  logRetentionInDays: 14
+  logs:
+    # There isn't yet a way to set a log retention on the apiGateway logs.
+    # Also if one deletes the stack, the log group doesn't get deleted.
+    restApi:
+      accessLogging: false
+      executionLogging: true
+      level: ERROR
+      fullExecutionData: false
+  tracing:
+    apiGateway: false
+    lambda: false
+  tags:
+    service: ${self:service}
+functions:
+  api:
+    role: ApiLambdaExecution
+    timeout: 30
+    memorySize: 128
+    reservedConcurrency: 2  # Just to mitigate rouge request related cost
+    # handler can be used for serverless-offline usage, comment out image block
+    # handler: kolvir/api/handler.api
+    image:
+      name: api
+      command:
+        - kolvir/api/handler.api
+    events:
+      - http:
+          path: /{any+}
+          method: ANY
+          cors: true
+      - http:
+          path: /
+          method: ANY
+          cors: true
+resources:
+  Resources:
+    ApiLambdaExecution:
+      Type: AWS::IAM::Role
+      Properties:
+        RoleName: ${self:service}-${self:custom.stage}
+        Path: /exec/
+        PermissionsBoundary: !Sub arn:aws:iam::${AWS::AccountId}:policy/boundaries/LambdaBoundary
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service:
+                  - lambda.amazonaws.com
+              Action: sts:AssumeRole
+        ManagedPolicyArns:
+          - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+          - !Ref KolvirManagedPolicy
+    KolvirManagedPolicy:
+      Type: AWS::IAM::ManagedPolicy
+      Properties:
+        ManagedPolicyName: ${self:service}
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - s3:Get*
+                - s3:List*
+                - s3:Put*
+              Resource:
+                - ${cf:persistance.PypiBucketArn, "none"}
+                - '${cf:persistance.PypiBucketArn, "none"}/*'
+            - Effect: Allow
+              Action:
+                - ssm:*
+              Resource:
+                - "*"
+            - Effect: Allow
+              Action:
+                - logs:CreateLogGroup
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource:
+                - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*:*:*"
+    LambdaSecurityGroup:
+      Type: AWS::EC2::SecurityGroup
+      Properties:
+        GroupName: ${self:service}-${self:custom.stage}
+        GroupDescription: Security group for ${self:service}
+        SecurityGroupEgress:
+          - Description: 'allow this lambda to connect to any external machine'
+            IpProtocol: '-1'
+            CidrIp: 0.0.0.0/0
+        VpcId: ${cf:vpc-2azs.VPC, "1"}
+        Tags: ${self:custom.variables.tags}
+    CertificateManagerCertificate:
+      # Deleteing this stack might leave behind a Route53 entry used for validation
+      Type: AWS::CertificateManager::Certificate
+      Properties:
+        DomainName: ${self:service}.${self:custom.variables.base_domain_name}
+        DomainValidationOptions:
+          - DomainName: ${self:service}.${self:custom.variables.base_domain_name}
+            HostedZoneId: ${cf:zone-public.HostedZoneId, "1"}
+        ValidationMethod: DNS
+        Tags: ${self:custom.variables.tags}
+    DomainName:
+      Type: AWS::ApiGateway::DomainName
+      Properties:
+        RegionalCertificateArn: !Ref CertificateManagerCertificate
+        DomainName: ${self:service}.${self:custom.variables.base_domain_name}
+        EndpointConfiguration:
+          Types:
+            - REGIONAL
+        SecurityPolicy: TLS_1_2
+        Tags: ${self:custom.variables.tags}
+    BasePathMapping:
+      Type: AWS::ApiGateway::BasePathMapping
+      Properties:
+        DomainName: !Ref DomainName
+        RestApiId: !Ref ApiGatewayRestApi
+        BasePath: ""
+        Stage: ${self:custom.stage}
+      DependsOn:
+        - ApiGatewayDeployment${sls:instanceId}
+    RecordSetGroup:
+      Type: AWS::Route53::RecordSetGroup
+      DependsOn:
+        - CertificateManagerCertificate
+      Properties:
+        HostedZoneId: ${cf:zone-public.HostedZoneId, "1"}
+        RecordSets:
+          - Name: ${self:service}.${self:custom.variables.base_domain_name}
+            Type: A
+            AliasTarget:
+              HostedZoneId:
+                Fn::GetAtt:
+                  - DomainName
+                  - RegionalHostedZoneId
+              DNSName:
+                Fn::GetAtt:
+                  - DomainName
+                  - RegionalDomainName

@@ -1,0 +1,41 @@
+version: "3.8"
+
+services:
+  kolvir.local:
+    image: kolvir:local
+    depends_on:
+      - localstack
+    ports:
+      - 3000:3000
+    environment:
+      SERVICE_NAME: kolvir
+      LOG_LEVEL: INFO  # Testing LOG_LEVEL is set in conftest.py
+      CONTEXT: local
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-""}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-""}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-""}
+      AWS_DEFAULT_REGION: ${AWS_REGION:-""}
+      AWS_REGION: ${AWS_REGION:-""}
+      AWS_PAGER: ""
+      JWT_SECRET: ${JWT_SECRET:-""}
+    volumes:
+      - /app/node_modules/
+      - /.venv
+      - ./:/app
+    command: /bin/sh ./scripts/run_app.sh
+  localstack:
+    image: localstack/localstack:0.13.3
+    ports:
+      - "127.0.0.1:4510-4530:4510-4530"
+      - "127.0.0.1:4566:4566"
+      - "127.0.0.1:4571:4571"
+    environment:
+      - SERVICES=${SERVICES-}
+      - DEBUG=${DEBUG-}
+      - DATA_DIR=${DATA_DIR-}
+      - LAMBDA_EXECUTOR=${LAMBDA_EXECUTOR-}
+      - HOST_TMP_FOLDER=${TMPDIR:-/tmp/}localstack
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    volumes:
+      - "${TMPDIR:-/tmp/localstack}:/tmp/localstack"
+      - "/var/run/docker.sock:/var/run/docker.sock"
