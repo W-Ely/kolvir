@@ -59,6 +59,7 @@ clean: ## clean dev artifacts
 	docker build . -t kolvir:python-node --target python-node --rm
 	docker build . -t kolvir:local --target local --rm
 	docker build . -t kolvir:api --target api --rm
+	docker build . -t kolvir:circle --target circle --rm
 	- docker image prune -f --filter="label=service=kolvir"
 	@touch .build
 

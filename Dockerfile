@@ -56,3 +56,12 @@ RUN pipenv install --system --deploy
 COPY ./kolvir ./kolvir
 
 ENTRYPOINT [ "/usr/local/bin/python", "-m", "awslambdaric" ]
+
+# --------------
+
+FROM kolvir:base as circle
+LABEL "service"="kolvir"
+
+COPY Pipfile* ./
+RUN pipenv install --system --deploy --dev --ignore-pipfile --keep-outdated
+COPY . .
