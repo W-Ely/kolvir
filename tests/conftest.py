@@ -17,7 +17,7 @@ os.environ["AWS_ACCESS_KEY_ID"] = "TEST"
 os.environ["AWS_SECRET_ACCESS_KEY"] = "TEST"
 os.environ["AWS_SECURITY_TOKEN"] = "TEST"
 os.environ["AWS_SESSION_TOKEN"] = "TEST"
-os.environ["AWS_REGION"] = "TEST"
+os.environ["AWS_REGION"] = "us-west-2"
 
 os.environ["JWT_SECRET"] = "TEST"
 os.environ["BOTO_ENDPOINT_URL"] = "http://localstack:4566/"
