@@ -36,9 +36,7 @@ clean: ## clean dev artifacts
 		.coverage serverless pytest_cache dist ipynb_checkpoints .DS_Store \
 		kolvir.egg-info
 
-.lock: Dockerfile Pipfile package.json
-	docker build . -t kolvir:base --target base --rm
-	docker build . -t kolvir:python-node --target python-node --rm
+.lock: .build Pipfile package.json
 	# Python
 	$(eval container-id := $(shell docker create kolvir:base pipenv lock -v --clear))
 	docker container cp Pipfile $(container-id):/app/Pipfile
@@ -56,7 +54,9 @@ clean: ## clean dev artifacts
 	# consider improving this with audit fix
 	@touch .lock
 
-.build: .dockerignore
+.build: Dockerfile .dockerignore Pipfile Pipfile.lock package.json package-lock.json $(service-files)
+	docker build . -t kolvir:base --target base --rm
+	docker build . -t kolvir:python-node --target python-node --rm
 	docker build . -t kolvir:local --target local --rm
 	docker build . -t kolvir:api --target api --rm
 	- docker image prune -f --filter="label=service=kolvir"
