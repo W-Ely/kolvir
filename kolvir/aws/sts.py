@@ -29,8 +29,6 @@ def assume_role(
     if duration_seconds:
         kwargs["DurationSeconds"] = duration_seconds
     try:
-        return get_client("sts", cache_key=get_ident()).assume_role(
-            **kwargs
-        )
+        return get_client("sts", cache_key=get_ident()).assume_role(**kwargs)
     except ClientError as ex:
         raise AwsException(f"Failed to assume_role: {role_session_name}") from ex

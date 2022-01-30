@@ -1,0 +1,30 @@
+version: 2.1
+parameters:
+  docker_version:
+    type: string
+    default: 20.10.11
+jobs:
+  lint:
+    docker:
+      - image: cimg/base:2022.01-20.04
+    steps:
+      - checkout
+      - setup_remote_docker:
+          docker_layer_caching: true
+          version: << pipeline.parameters.docker_version >>
+      - run: make lint
+  test:
+    docker:
+      - image: cimg/base:2022.01-20.04
+    steps:
+      - checkout
+      - setup_remote_docker:
+          docker_layer_caching: true
+          version: << pipeline.parameters.docker_version >>
+      - run: make test
+workflows:
+  lint-test-deploy:
+    jobs:
+      - lint
+      - test
+      # - deploy:

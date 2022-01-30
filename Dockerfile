@@ -22,8 +22,8 @@ LABEL "service"="kolvir"
 RUN apt-get update && apt-get install -y curl build-essential
 
 ENV \
-  NODE_VERSION=16.13.0 \
-  NVM_VERSION=0.39.0
+  NODE_VERSION=16.13.2 \
+  NVM_VERSION=0.39.1
 
 RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v${NVM_VERSION}/install.sh | bash
 ENV \
@@ -56,3 +56,12 @@ RUN pipenv install --system --deploy
 COPY ./kolvir ./kolvir
 
 ENTRYPOINT [ "/usr/local/bin/python", "-m", "awslambdaric" ]
+
+# --------------
+
+FROM kolvir:base as circle
+LABEL "service"="kolvir"
+
+COPY Pipfile* ./
+RUN pipenv install --system --deploy --dev --ignore-pipfile --keep-outdated
+COPY . .
