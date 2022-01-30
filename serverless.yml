@@ -64,7 +64,7 @@ functions:
     role: ApiLambdaExecution
     timeout: 30
     memorySize: 128
-    reservedConcurrency: 2  # Just to mitigate rouge request related cost
+    reservedConcurrency: 2  # Just to mitigate rouge request related costs
     # handler can be used for serverless-offline usage, comment out image block
     # handler: kolvir/api/handler.api
     image:

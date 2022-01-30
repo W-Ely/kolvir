@@ -65,7 +65,7 @@ clean: ## clean dev artifacts
 	- docker image prune -f --filter="label=service=kolvir"
 	@touch .build
 
-.dev: Makefile Pipfile
+.dev: Makefile Pipfile Pipfile.lock
 	pipenv sync --dev
 	@touch .dev
 
