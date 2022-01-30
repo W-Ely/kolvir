@@ -1,5 +1,4 @@
-# Python 3.10 has dependency install issues
-FROM python:3.9-slim as base
+FROM python:3.10-slim as base
 LABEL "service"="kolvir"
 
 WORKDIR /app
