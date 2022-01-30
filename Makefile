@@ -56,7 +56,7 @@ clean: ## clean dev artifacts
 	# consider improving this with audit fix
 	@touch .lock
 
-.build: .lock .dockerignore
+.build: .dockerignore
 	docker build . -t kolvir:local --target local --rm
 	docker build . -t kolvir:api --target api --rm
 	- docker image prune -f --filter="label=service=kolvir"
