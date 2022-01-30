@@ -134,6 +134,15 @@ deploy: .build .dev .test .serverless-env ## Deploy from local
 		docker-compose run -e SLS_DEBUG=* $(serverless-env) --rm kolvir.$(context) \
 			./node_modules/.bin/serverless deploy $(serverless-params)
 
+circle-deploy: .build .dev .serverless-env ## Deploy from local
+	PYTHONPATH=$$(pwd) pipenv run python -c \
+		"from kolvir.aws import sts; print(sts.get_caller_identity())"
+	# PYTHONPATH=$$(pwd) pipenv run python ./kolvir/aws/assume_role.py --role $(deploy-role) --mfa \
+	# 	aws ecr get-login-password --region $(region) | \
+	# 		docker login --username AWS --password-stdin $(ecr-registry)
+	# docker build . -t kolvir:api -t kolvir \
+	# 	-t $(ecr-registry)/kolvir:$(gitsha) --target api --rm
+
 container-id ?= new
 bash: .build  ## Run bash in container [container-id=<an id>] otherwise in existing or new app container
 ifeq ($(container-id), new)

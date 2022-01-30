@@ -1,5 +1,10 @@
 version: 2.1
+orbs:
+  aws-cli: circleci/aws-cli@2.0.6
 parameters:
+  python_version:
+    type: string
+    default: 3.10.2
   docker_version:
     type: string
     default: 20.10.11
@@ -22,9 +27,15 @@ jobs:
           docker_layer_caching: true
           version: << pipeline.parameters.docker_version >>
       - run: make test
+  deploy:
+    executor: aws-cli/default
+    steps:
+      - checkout
+      - aws-cli/setup
+      - run: make circle-deploy
 workflows:
   lint-test-deploy:
     jobs:
       - lint
       - test
-      # - deploy:
+      - deploy
