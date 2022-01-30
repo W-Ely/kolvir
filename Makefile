@@ -36,7 +36,9 @@ clean: ## clean dev artifacts
 		.coverage serverless pytest_cache dist ipynb_checkpoints .DS_Store \
 		kolvir.egg-info
 
-.lock: .build Pipfile package.json
+.lock: Makefile Pipfile package.json
+	docker build . -t kolvir:base --target base --rm
+	docker build . -t kolvir:python-node --target python-node --rm
 	# Python
 	$(eval container-id := $(shell docker create kolvir:base pipenv lock -v --clear))
 	docker container cp Pipfile $(container-id):/app/Pipfile
@@ -45,7 +47,7 @@ clean: ## clean dev artifacts
 	docker rm -v $(container-id)
 	chown $(shell id -u):$(shell id -g) Pipfile.lock
 	# JavaScript
-	$(eval container-id := $(shell docker create kolvir:python-node npm install))
+	$(eval container-id := $(shell docker create kolvir:python-node /bin/bash -c "npm install && npm audit fix --force"))
 	docker container cp package.json $(container-id):/app/package.json
 	docker container start -i $(container-id)
 	docker container cp $(container-id):/app/package-lock.json package-lock.json
