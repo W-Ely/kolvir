@@ -134,7 +134,7 @@ deploy: .build .dev .test .serverless-env ## Deploy from local
 		docker-compose run -e SLS_DEBUG=* $(serverless-env) --rm kolvir.$(context) \
 			./node_modules/.bin/serverless deploy $(serverless-params)
 
-circle-deploy: .build .dev .serverless-env ## Deploy from local
+circle-deploy: .dev # .build .serverless-env ## Deploy from local
 	PYTHONPATH=$$(pwd) pipenv run python -c \
 		"from kolvir.aws import sts; print(sts.get_caller_identity())"
 	# PYTHONPATH=$$(pwd) pipenv run python ./kolvir/aws/assume_role.py --role $(deploy-role) --mfa \
