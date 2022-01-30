@@ -28,9 +28,14 @@ jobs:
           version: << pipeline.parameters.docker_version >>
       - run: make test
   deploy:
-    executor: aws-cli/default
+    executor:
+      aws-cli/default:
+        python-version: << pipeline.parameters.python_version >>
     steps:
       - checkout
+      - setup_remote_docker:
+          docker_layer_caching: true
+          version: << pipeline.parameters.docker_version >>
       - aws-cli/setup
       - run: make circle-deploy
 workflows:
