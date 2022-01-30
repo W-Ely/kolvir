@@ -29,8 +29,8 @@ jobs:
       - run: make test
   deploy:
     executor:
-      aws-cli/default:
-        python-version: << pipeline.parameters.python_version >>
+      name: aws-cli/default
+      python-version: << pipeline.parameters.python_version >>
     steps:
       - checkout
       - setup_remote_docker:
