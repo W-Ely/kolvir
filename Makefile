@@ -68,7 +68,7 @@ clean: ## clean dev artifacts
 	@touch .dev
 
 .lint: pyproject.toml .build $(service-files) $(test-files) $(script-files) Makefile
-	docker-compose run --rm kolvir.$(context) /bin/sh ./scripts/lint.sh \
+	docker-compose run --rm kolvir.$(context).lint /bin/sh ./scripts/lint.sh \
 		$(service-files) $(test-files)
 	@touch .lint
 

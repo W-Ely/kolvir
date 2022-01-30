@@ -32,6 +32,21 @@ services:
     environment:
       SERVICE_NAME: kolvir
       LOG_LEVEL: INFO  # Testing LOG_LEVEL is set in conftest.py
+      CONTEXT: ci
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-""}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-""}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-""}
+      AWS_DEFAULT_REGION: ${AWS_REGION:-""}
+      AWS_REGION: ${AWS_REGION:-""}
+      AWS_PAGER: ""
+      JWT_SECRET: ${JWT_SECRET:-""}
+  kolvir.local.lint:
+    image: kolvir:local
+    ports:
+      - 3000:3000
+    environment:
+      SERVICE_NAME: kolvir
+      LOG_LEVEL: INFO  # Testing LOG_LEVEL is set in conftest.py
       CONTEXT: local
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-""}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-""}
@@ -40,11 +55,25 @@ services:
       AWS_REGION: ${AWS_REGION:-""}
       AWS_PAGER: ""
       JWT_SECRET: ${JWT_SECRET:-""}
-    # volumes:
-    #   - /app/node_modules/
-    #   - /.venv
-    #   - ./:/app
-    command: /bin/sh ./scripts/run_app.sh
+    volumes:
+      - /app/node_modules/
+      - /.venv
+      - ./:/app
+  kolvir.circle.lint:
+    image: kolvir:circle
+    ports:
+      - 3000:3000
+    environment:
+      SERVICE_NAME: kolvir
+      LOG_LEVEL: INFO  # Testing LOG_LEVEL is set in conftest.py
+      CONTEXT: ci
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-""}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-""}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-""}
+      AWS_DEFAULT_REGION: ${AWS_REGION:-""}
+      AWS_REGION: ${AWS_REGION:-""}
+      AWS_PAGER: ""
+      JWT_SECRET: ${JWT_SECRET:-""}
   localstack:
     image: localstack/localstack:0.13.3
     ports:
