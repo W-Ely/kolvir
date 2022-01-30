@@ -17,7 +17,13 @@ jobs:
       - setup_remote_docker:
           docker_layer_caching: true
           version: << pipeline.parameters.docker_version >>
-      - run: make lint
+      - run:
+          name: make lint
+          environment:
+            PIPENV_NOSPIN: 1
+            PIPENV_VENV_IN_PROJECT: 1
+          command: |
+            make lint
   test:
     docker:
       - image: cimg/base:2022.01-20.04
@@ -26,7 +32,14 @@ jobs:
       - setup_remote_docker:
           docker_layer_caching: true
           version: << pipeline.parameters.docker_version >>
-      - run: make test
+      - run:
+          name: make test
+          environment:
+            PIPENV_NOSPIN: 1
+            PIPENV_VENV_IN_PROJECT: 1
+          command: |
+            make test
+
   deploy:
     executor:
       name: aws-cli/default
@@ -37,10 +50,18 @@ jobs:
           docker_layer_caching: true
           version: << pipeline.parameters.docker_version >>
       - aws-cli/setup
-      - run: make circle-deploy
+      - run:
+          name: make circle-deploy
+          environment:
+            PIPENV_NOSPIN: 1
+            PIPENV_VENV_IN_PROJECT: 1
+          command: |
+            make circle-deploy
 workflows:
   lint-test-deploy:
     jobs:
       - lint
       - test
-      - deploy
+      - deploy:
+          context:
+            - org-global
